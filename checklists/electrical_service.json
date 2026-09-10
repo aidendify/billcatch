@@ -1,0 +1,13 @@
+{
+  "key": "electrical_service",
+  "label": "Electrical service",
+  "items": [
+    {"item_key": "extra_breaker", "label": "Extra breaker", "kind": "qty", "unit_label": "ea", "default_unit_cents": 4500, "sort_order": 10},
+    {"item_key": "gfci_upgrade", "label": "GFCI upgrade", "kind": "flag", "unit_label": "ea", "default_unit_cents": 9500, "sort_order": 20},
+    {"item_key": "smoke_detector", "label": "Smoke detector add", "kind": "qty", "unit_label": "ea", "default_unit_cents": 6500, "sort_order": 30},
+    {"item_key": "after_hours_hours", "label": "After-hours hours", "kind": "hours", "unit_label": "hr", "default_unit_cents": 16000, "sort_order": 40},
+    {"item_key": "permit_fee", "label": "Permit fee pass-through", "kind": "flag", "unit_label": "ea", "default_unit_cents": 12500, "sort_order": 50},
+    {"item_key": "afci_breaker", "label": "AFCI breaker", "kind": "flag", "unit_label": "ea", "default_unit_cents": 8500, "sort_order": 60},
+    {"item_key": "outlet_add", "label": "Outlet add", "kind": "qty", "unit_label": "ea", "default_unit_cents": 12500, "sort_order": 70}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "key": "plumbing_service",
+  "label": "Plumbing service",
+  "items": [
+    {"item_key": "extra_fittings", "label": "Extra fittings", "kind": "qty", "unit_label": "ea", "default_unit_cents": 1200, "sort_order": 10},
+    {"item_key": "expansion_tank", "label": "Water heater expansion tank", "kind": "flag", "unit_label": "ea", "default_unit_cents": 18500, "sort_order": 20},
+    {"item_key": "junk_fee", "label": "Junk / haul-away fee", "kind": "flag", "unit_label": "ea", "default_unit_cents": 7500, "sort_order": 30},
+    {"item_key": "after_hours_hours", "label": "After-hours hours", "kind": "hours", "unit_label": "hr", "default_unit_cents": 14500, "sort_order": 40},
+    {"item_key": "camera_addon", "label": "Camera inspection add-on", "kind": "flag", "unit_label": "ea", "default_unit_cents": 22500, "sort_order": 50},
+    {"item_key": "water_shutoff", "label": "Main shutoff valve", "kind": "flag", "unit_label": "ea", "default_unit_cents": 16500, "sort_order": 60},
+    {"item_key": "prv_replace", "label": "PRV replacement", "kind": "flag", "unit_label": "ea", "default_unit_cents": 28500, "sort_order": 70}
+  ]
+}
