@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}{{ job.customer_name }} — BillCatch{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="crumb"><a href="{{ url_for('index') }}">Dashboard</a> / Job #{{ job.id }}</p>
+  <h1>{{ job.customer_name }}</h1>
+  <p class="lede">
+    <span class="badge badge-{{ job.status }}">{{ status_label(job.status) }}</span>
+    · {{ template_label(job.trade_template) }}
+    {% if aging_hours is not none and job.status == 'completed' and not job.invoiced_at %}
+    · Aging {{ aging_hours }}h
+    {% endif %}
+  </p>
+</div>
+
+<section class="card">
+  <dl class="facts">
+    <div>
+      <dt>Job ref</dt>
+      <dd>{{ job.job_ref or "—" }}</dd>
+    </div>
+    <div>
+      <dt>Title</dt>
+      <dd>{{ job.title or "—" }}</dd>
+    </div>
+    <div>
+      <dt>Site</dt>
+      <dd>{{ job.site_label or "—" }}</dd>
+    </div>
+    <div>
+      <dt>Email</dt>
+      <dd>{{ job.customer_email or "—" }}</dd>
+    </div>
+    <div>
+      <dt>Phone</dt>
+      <dd>{{ job.customer_phone or "—" }}</dd>
+    </div>
+    <div>
+      <dt>Completed</dt>
+      <dd>{{ job.completed_at or "—" }}</dd>
+    </div>
+  </dl>
+  {% if job.notes %}
+  <div class="extra-note"><strong>Notes:</strong> {{ job.notes }}</div>
+  {% endif %}
+</section>
+
+{% if job.status != 'invoiced' and job.status != 'cancelled' %}
+<section class="card">
+  <h2>Closeout checklist</h2>
+  <p class="hint">Fill flags / qty / hours. Unit price is editable (shown in dollars). Then generate draft.</p>
+  <form method="post" action="{{ url_for('job_draft', job_id=job.id) }}" class="stack" id="closeout-form">
+    <ul class="checklist">
+      {% for item in checklist %}
+      <li>
+        <div class="hold-row">
+          <div>
+            {% if item.kind == 'flag' %}
+            <label class="check-row">
+              <input type="checkbox" name="selected_{{ item.id }}" value="1" {% if item.selected %}checked{% endif %}>
+              <span>{{ item.label }} <span class="hint">(flag)</span></span>
+            </label>
+            {% else %}
+            <strong>{{ item.label }}</strong>
+            <span class="hint">({{ item.kind }}{% if item.unit_label %} · {{ item.unit_label }}{% endif %})</span>
+            <label>{{ 'Hours' if item.kind == 'hours' else 'Qty' }}
+              <input name="quantity_{{ item.id }}" type="number" step="0.01" min="0"
+                     value="{{ item.quantity if item.quantity is not none else '' }}">
+            </label>
+            {% endif %}
+            <label>Line note
+              <input name="note_{{ item.id }}" value="{{ item.line_note or '' }}">
+            </label>
+          </div>
+          <div>
+            <label>Unit price ($)
+              <input name="unit_cents_{{ item.id }}"
+                     value="{{ '%.2f'|format((item.unit_cents or 0) / 100) }}">
+            </label>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <hr class="sep">
+    <h3>Custom line (optional, one)</h3>
+    <div class="hold-row">
+      <div class="stack">
+        <label>Label
+          <input name="custom_label" value="{{ custom.label if custom else '' }}">
+        </label>
+        <label>Kind
+          <select name="custom_kind">
+            <option value="flag" {% if custom and custom.kind == 'flag' %}selected{% endif %}>flag</option>
+            <option value="qty" {% if custom and custom.kind == 'qty' %}selected{% endif %}>qty</option>
+            <option value="hours" {% if custom and custom.kind == 'hours' %}selected{% endif %}>hours</option>
+          </select>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" name="custom_selected" value="1" {% if custom and custom.selected %}checked{% endif %}>
+          <span>Bill this custom line (for flag)</span>
+        </label>
+        <label>Qty / hours
+          <input name="custom_quantity" type="number" step="0.01" min="0"
+                 value="{{ custom.quantity if custom and custom.quantity is not none else '' }}">
+        </label>
+      </div>
+      <div>
+        <label>Unit price ($)
+          <input name="custom_unit_cents"
+                 value="{% if custom %}{{ '%.2f'|format((custom.unit_cents or 0) / 100) }}{% endif %}">
+        </label>
+      </div>
+    </div>
+
+    <label>Tax ($)
+      <input name="tax_cents" value="{{ '%.2f'|format((job.tax_cents or 0) / 100) }}">
+    </label>
+
+    <div class="btn-row">
+      <button class="btn" type="submit">Generate draft</button>
+      <button class="btn btn-quiet" type="submit" formaction="{{ url_for('job_complete', job_id=job.id) }}">Save &amp; mark completed</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Photo note (optional)</h2>
+  <p class="hint">One image, max ~5 MB. Skip if you do not need it — drafting still works.</p>
+  {% if job.photo_path %}
+  <p>Current: <a href="{{ url_for('uploaded_file', filename=job.photo_path) }}">{{ job.photo_path }}</a>
+    {% if job.photo_caption %} — {{ job.photo_caption }}{% endif %}
+  </p>
+  {% endif %}
+  <form method="post" action="{{ url_for('job_photo', job_id=job.id) }}" enctype="multipart/form-data" class="stack">
+    <label>Photo
+      <input type="file" name="photo" accept="image/*">
+    </label>
+    <label>Caption
+      <input name="photo_caption" value="{{ job.photo_caption or '' }}">
+    </label>
+    <button class="btn btn-quiet" type="submit">Upload photo</button>
+  </form>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Draft invoice lines</h2>
+  {% if lines %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Qty</th>
+          <th>Unit</th>
+          <th>Line</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in lines %}
+        <tr>
+          <td>{{ row.description }}</td>
+          <td>{{ row.quantity }}</td>
+          <td>{{ format_money(row.unit_cents) }}</td>
+          <td>{{ format_money(row.line_cents) }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td colspan="3"><strong>Subtotal</strong></td>
+          <td>{{ format_money(subtotal) }}</td>
+        </tr>
+        <tr>
+          <td colspan="3"><strong>Tax</strong></td>
+          <td>{{ format_money(job.tax_cents) }}</td>
+        </tr>
+        <tr>
+          <td colspan="3"><strong>Total</strong></td>
+          <td><strong>{{ format_money(total) }}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="copy-fields" style="margin-top:1rem">
+    <label>Copy text
+      <textarea id="draft-copy" readonly rows="8">{{ copy_text }}</textarea>
+    </label>
+  </div>
+  <div class="btn-row">
+    <button type="button" class="btn" onclick='copyFrom("draft-copy", this)'>Copy</button>
+    <a class="btn btn-quiet" href="{{ url_for('job_export_csv', job_id=job.id) }}">Export CSV</a>
+    {% if job.status != 'invoiced' %}
+    <form class="inline-form" method="post" action="{{ url_for('job_invoiced', job_id=job.id) }}">
+      <button class="btn btn-ok" type="submit">Mark invoiced</button>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="empty">No draft yet. Fill the checklist and hit Generate draft.</p>
+  {% endif %}
+</section>
+
+{% if job.photo_path and (job.status == 'invoiced' or job.status == 'cancelled') %}
+<section class="card">
+  <h2>Photo</h2>
+  <p><a href="{{ url_for('uploaded_file', filename=job.photo_path) }}">{{ job.photo_path }}</a>
+    {% if job.photo_caption %} — {{ job.photo_caption }}{% endif %}
+  </p>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Timeline</h2>
+  <ul class="timeline">
+    {% for ev in events %}
+    <li>
+      <span class="kind">{{ event_label(ev.kind) }}</span>
+      <span class="at">{{ ev.at }}</span>
+    </li>
+    {% else %}
+    <li class="empty">No events yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

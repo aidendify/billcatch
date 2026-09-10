@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — BillCatch{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ business_name }}</h1>
+  <p class="lede">Open jobs, unbilled closeouts, recently invoiced.</p>
+</div>
+
+<div class="btn-row">
+  <a class="btn" href="{{ url_for('new_job') }}">New job</a>
+  <form class="inline-form" method="post" action="{{ url_for('admin_unbilled_check') }}">
+    <button class="btn btn-quiet" type="submit">Force unbilled check</button>
+  </form>
+</div>
+
+<section class="card">
+  <h2>Unbilled</h2>
+  <p class="hint">Completed jobs with no invoice yet. Aging hours shown.</p>
+  {% if unbilled %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Trade</th>
+          <th>Completed</th>
+          <th>Aging</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in unbilled %}
+        <tr>
+          <td><a href="{{ url_for('job_detail', job_id=job.id) }}">{{ job.customer_name }}</a></td>
+          <td>{{ template_label(job.trade_template) }}</td>
+          <td>{{ job.completed_at or "—" }}</td>
+          <td>{% if job.aging_hours is not none %}{{ job.aging_hours }}h{% else %}—{% endif %}</td>
+          <td><span class="badge badge-completed">Unbilled</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No unbilled completed jobs.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Open</h2>
+  {% if open_jobs %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Trade</th>
+          <th>Ref</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in open_jobs %}
+        <tr>
+          <td><a href="{{ url_for('job_detail', job_id=job.id) }}">{{ job.customer_name }}</a></td>
+          <td>{{ template_label(job.trade_template) }}</td>
+          <td>{{ job.job_ref or "—" }}</td>
+          <td>{{ job.created_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No open jobs.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Recently invoiced</h2>
+  {% if recently_invoiced %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Trade</th>
+          <th>Invoiced</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in recently_invoiced %}
+        <tr>
+          <td><a href="{{ url_for('job_detail', job_id=job.id) }}">{{ job.customer_name }}</a></td>
+          <td>{{ template_label(job.trade_template) }}</td>
+          <td>{{ job.invoiced_at or "—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Nothing marked invoiced yet.</p>
+  {% endif %}
+</section>
+{% endblock %}
